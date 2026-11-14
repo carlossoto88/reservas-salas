@@ -1,0 +1,521 @@
+{
+  "info": {
+    "name": "Reservas de Salas - API",
+    "description": "Colección para probar la API de reserva de salas (Spring Boot). Importa también el environment \"Reservas de Salas - Local\" y arranca la app con `mvn spring-boot:run` antes de ejecutar las peticiones.\n\nOrden recomendado: Salas > Crear sala, luego Reservas > Crear reserva (usa el `salaId` guardado automáticamente), y así sucesivamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "usuario", "value": "admin" },
+    { "key": "clave", "value": "admin123" },
+    { "key": "salaId", "value": "" },
+    { "key": "reservaId", "value": "" },
+    { "key": "inicio", "value": "" },
+    { "key": "fin", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Salas",
+      "item": [
+        {
+          "name": "Crear sala",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sala Azul\",\n  \"capacidad\": 8\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/salas", "host": [ "{{baseUrl}}" ], "path": [ "api", "salas" ] },
+            "description": "Crea una sala. Requiere autenticación Basic. Devuelve 201 y guarda el id en la variable de colección `salaId`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye id, nombre y capacidad', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('id');",
+                  "    pm.expect(body.nombre).to.eql('Sala Azul');",
+                  "    pm.expect(body.capacidad).to.eql(8);",
+                  "    pm.collectionVariables.set('salaId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear sala con el mismo nombre -> 409",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sala Azul\",\n  \"capacidad\": 8\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/salas", "host": [ "{{baseUrl}}" ], "path": [ "api", "salas" ] },
+            "description": "Ejecútala después de 'Crear sala': ya existe una sala con ese nombre, debe devolver 409."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear sala sin datos válidos -> 400",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"capacidad\": 0\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/salas", "host": [ "{{baseUrl}}" ], "path": [ "api", "salas" ] },
+            "description": "Nombre vacío y capacidad inválida -> 400 con el detalle de los campos erróneos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Incluye los errores por campo', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.errores).to.have.property('nombre');",
+                  "    pm.expect(body.errores).to.have.property('capacidad');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear sala sin autenticación -> 401",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sala Sin Auth\",\n  \"capacidad\": 4\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/salas", "host": [ "{{baseUrl}}" ], "path": [ "api", "salas" ] },
+            "description": "Sin usuario/contraseña -> 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar salas",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": { "raw": "{{baseUrl}}/api/salas", "host": [ "{{baseUrl}}" ], "path": [ "api", "salas" ] },
+            "description": "Endpoint público, lista todas las salas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta es una lista', function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar sala por id",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{baseUrl}}/api/salas/{{salaId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "salas", "{{salaId}}" ]
+            },
+            "description": "Usa el `salaId` guardado por 'Crear sala'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar sala inexistente -> 404",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{baseUrl}}/api/salas/999999",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "salas", "999999" ]
+            },
+            "description": "Id que no existe -> 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reservas",
+      "item": [
+        {
+          "name": "Crear reserva",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salaId\": {{salaId}},\n  \"responsable\": \"Ana García\",\n  \"inicio\": \"{{inicio}}\",\n  \"fin\": \"{{fin}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/reservas", "host": [ "{{baseUrl}}" ], "path": [ "api", "reservas" ] },
+            "description": "Crea una reserva para la sala con id `salaId` (ejecuta antes 'Crear sala'). El pre-request script calcula `inicio`/`fin` como una franja de 1 hora dentro de 7 días a partir de ahora, para cumplir la validación @Future."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "function formatoLocal(fecha) {",
+                  "    const pad = (n) => String(n).padStart(2, '0');",
+                  "    return fecha.getFullYear() + '-' + pad(fecha.getMonth() + 1) + '-' + pad(fecha.getDate()) +",
+                  "        'T' + pad(fecha.getHours()) + ':' + pad(fecha.getMinutes()) + ':00';",
+                  "}",
+                  "",
+                  "const inicio = new Date();",
+                  "inicio.setDate(inicio.getDate() + 7);",
+                  "inicio.setHours(10, 0, 0, 0);",
+                  "",
+                  "const fin = new Date(inicio);",
+                  "fin.setHours(11, 0, 0, 0);",
+                  "",
+                  "pm.collectionVariables.set('inicio', formatoLocal(inicio));",
+                  "pm.collectionVariables.set('fin', formatoLocal(fin));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta incluye id y responsable', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('id');",
+                  "    pm.expect(body.responsable).to.eql('Ana García');",
+                  "    pm.collectionVariables.set('reservaId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Repetir la misma reserva -> 409",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salaId\": {{salaId}},\n  \"responsable\": \"Otro Responsable\",\n  \"inicio\": \"{{inicio}}\",\n  \"fin\": \"{{fin}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/reservas", "host": [ "{{baseUrl}}" ], "path": [ "api", "reservas" ] },
+            "description": "Ejecútala justo después de 'Crear reserva': mismo horario y sala ya ocupada -> 409."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear reserva con datos inválidos -> 400",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salaId\": null,\n  \"responsable\": \"\",\n  \"inicio\": \"2020-01-01T10:00:00\",\n  \"fin\": null\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/reservas", "host": [ "{{baseUrl}}" ], "path": [ "api", "reservas" ] },
+            "description": "Sala vacía, responsable vacío, inicio en el pasado y fin ausente -> 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear reserva sin autenticación -> 401",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salaId\": {{salaId}},\n  \"responsable\": \"Sin Auth\",\n  \"inicio\": \"{{inicio}}\",\n  \"fin\": \"{{fin}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/reservas", "host": [ "{{baseUrl}}" ], "path": [ "api", "reservas" ] },
+            "description": "Sin usuario/contraseña -> 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar reservas",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas?salaId={{salaId}}&pagina=0&tamano=10",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "reservas" ],
+              "query": [
+                { "key": "salaId", "value": "{{salaId}}" },
+                { "key": "fecha", "value": "2030-01-15", "disabled": true, "description": "Formato AAAA-MM-DD, opcional" },
+                { "key": "pagina", "value": "0" },
+                { "key": "tamano", "value": "10" }
+              ]
+            },
+            "description": "Lista reservas con filtros opcionales por sala y fecha, y paginación."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta está paginada', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('contenido');",
+                  "    pm.expect(body).to.have.property('paginaActual');",
+                  "    pm.expect(body).to.have.property('totalElementos');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar reserva",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "reservas", "{{reservaId}}" ]
+            },
+            "description": "Cancela la reserva con id `reservaId` (guardado por 'Crear reserva'). Devuelve 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar la misma reserva otra vez -> 409",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "reservas", "{{reservaId}}" ]
+            },
+            "description": "Ejecútala justo después de 'Cancelar reserva': ya estaba cancelada -> 409."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar reserva inexistente -> 404",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{usuario}}" },
+                { "key": "password", "value": "{{clave}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/999999",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "reservas", "999999" ]
+            },
+            "description": "Id que no existe -> 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
