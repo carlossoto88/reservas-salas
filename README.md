@@ -21,6 +21,9 @@ Usuario para los endpoints protegidos: **admin / admin123**
 
 > Los datos están en memoria, así que se pierden al parar la aplicación.
 
+Con la aplicación arrancada, la documentación interactiva (Swagger UI) está en
+`http://localhost:8080/swagger-ui.html`, y el JSON de OpenAPI en `http://localhost:8080/v3/api-docs`.
+
 ## Endpoints
 
 | Método | Ruta | Autenticación | Qué hace |
@@ -126,7 +129,6 @@ Cada parte sigue el mismo esquema: **Controller** (recibe la petición HTTP) →
   PostgreSQL real.
 - **JWT y usuarios en base de datos**, con roles (por ejemplo, que solo el que creó la reserva o
   un administrador puedan cancelarla) y guardar quién creó cada reserva.
-- **Documentación con OpenAPI/Swagger** (springdoc) para probar la API desde el navegador.
 - Más reglas de negocio: duración máxima de una reserva, horario de apertura, capacidad frente
   a número de asistentes.
 - Evitar el problema N+1 al listar reservas (ahora se carga la sala de cada reserva por separado).
@@ -138,18 +140,24 @@ Usé **Claude** (Anthropic) como asistente para escribir el proyecto.
 
 **Qué le pedí:**
 - Le pasé el enunciado completo y le pedí que generara el proyecto con commits progresivos.
-- Después de ver la primera versión, le pedí que **todo estuviera en español** (clases, métodos,
-  mensajes de error, commits y README) y que el código fuera **más sencillo y legible**.
+- Después de ver la primera versión, le pedí  que el código fuera **más sencillo y legible**.
+- Le pedí un **fichero de Postman** para poder probar la API sin usar curl a mano.
+- Le pedí que  **añadiera** el swagger al proyecto.
 
 **Qué acepté:**
 - La estructura por paquetes (sala, reserva, error, seguridad) y el esquema Controller → Service → Repository.
 - La consulta de solapamiento y la idea de cancelar marcando la reserva en lugar de borrarla.
 - Los tests: uno unitario con Mockito y uno de integración con MockMvc.
+- La colección de Postman (`postman/reservas-salas.postman_collection.json`) con los casos de
+  éxito y de error (400, 401, 404, 409) y su environment, y la dependencia `springdoc-openapi`
+  para exponer Swagger UI en `/swagger-ui.html`.
 
 **Qué corregí o cambié:**
 - La primera versión era demasiado compleja para lo que pide el enunciado: tenía bloqueos
   pesimistas, `ProblemDetail` (RFC 7807) y `Specification` de JPA.
   Pedí simplificarla: ahora el filtro es una única consulta JPQL, el error es un JSON propio
   muy simple y el bloqueo quedó como mejora futura (explicada arriba).
-- Estaba en inglés; pedí pasarlo todo a español.
+- La primera versión de springdoc (2.6.0) que propuso era incompatible con la versión de Spring
+  Boot del proyecto (fallaba al generar `/v3/api-docs`); le pedí que lo arrancara y lo probara,
+  detectó el fallo y lo corrigió subiendo a la versión 2.8.6.
 - Revisé que el código compila y que los tests pasan con `mvn test`.
