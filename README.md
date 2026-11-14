@@ -3,6 +3,8 @@
 API REST hecha con **Java 17** y **Spring Boot 3** para crear salas y reservarlas,
 evitando que dos reservas ocupen la misma sala a la vez.
 
+Repositorio: <https://github.com/carlossoto88/reservas-salas>
+
 **Tiempo invertido:** 45 minutos, entre desarrollo y pruebas.
 
 ## Cómo ejecutarlo
