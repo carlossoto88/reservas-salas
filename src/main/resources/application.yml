@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: reservas-salas
+
+  # Base de datos H2 en memoria: no hace falta instalar nada.
+  datasource:
+    url: jdbc:h2:mem:reservas;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+
+  # Las tablas las crea Flyway (src/main/resources/db/migration).
+  # Hibernate solo comprueba que las entidades coinciden con las tablas.
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
