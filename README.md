@@ -3,6 +3,8 @@
 API REST hecha con **Java 17** y **Spring Boot 3** para crear salas y reservarlas,
 evitando que dos reservas ocupen la misma sala a la vez.
 
+**Tiempo invertido:** 45 minutos, entre desarrollo y pruebas.
+
 ## Cómo ejecutarlo
 
 Requisitos: **Java 17 o superior** y **Maven 3.9+**. No hace falta instalar base de datos:
