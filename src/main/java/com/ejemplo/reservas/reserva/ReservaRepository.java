@@ -1,5 +1,7 @@
 package com.ejemplo.reservas.reserva;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,4 +26,20 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     boolean haySolapamiento(@Param("salaId") Long salaId,
                             @Param("inicio") LocalDateTime inicio,
                             @Param("fin") LocalDateTime fin);
+
+    /**
+     * Listado con filtros opcionales. Si un filtro llega a null, no se aplica.
+     *
+     * El filtro por fecha devuelve las reservas que ocupan algún momento de ese día,
+     * es decir, las que se solapan con [desde, hasta).
+     */
+    @Query("""
+            SELECT r FROM Reserva r
+            WHERE (:salaId IS NULL OR r.sala.id = :salaId)
+              AND (:desde IS NULL OR (r.inicio < :hasta AND r.fin > :desde))
+            """)
+    Page<Reserva> buscar(@Param("salaId") Long salaId,
+                         @Param("desde") LocalDateTime desde,
+                         @Param("hasta") LocalDateTime hasta,
+                         Pageable pageable);
 }

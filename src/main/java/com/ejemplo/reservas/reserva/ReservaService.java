@@ -5,11 +5,15 @@ import com.ejemplo.reservas.error.DatosInvalidosException;
 import com.ejemplo.reservas.error.NoEncontradoException;
 import com.ejemplo.reservas.sala.Sala;
 import com.ejemplo.reservas.sala.SalaService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 public class ReservaService {
@@ -41,8 +45,31 @@ public class ReservaService {
         return reservaRepository.save(reserva);
     }
 
-    public List<Reserva> listar() {
-        return reservaRepository.findAll(Sort.by("inicio"));
+    /**
+     * Lista reservas paginadas, ordenadas por fecha de inicio.
+     *
+     * @param salaId  si no es null, solo las de esa sala
+     * @param fecha   si no es null, solo las que ocupan algún momento de ese día
+     * @param pagina  número de página, empezando en 0
+     * @param tamano  elementos por página (entre 1 y 100)
+     */
+    public Page<Reserva> listar(Long salaId, LocalDate fecha, int pagina, int tamano) {
+        if (pagina < 0) {
+            throw new DatosInvalidosException("pagina", "La página no puede ser negativa");
+        }
+        if (tamano < 1 || tamano > 100) {
+            throw new DatosInvalidosException("tamano", "El tamaño de página debe estar entre 1 y 100");
+        }
+
+        LocalDateTime desde = null;
+        LocalDateTime hasta = null;
+        if (fecha != null) {
+            desde = fecha.atStartOfDay();           // 00:00 de ese día
+            hasta = fecha.plusDays(1).atStartOfDay(); // 00:00 del día siguiente
+        }
+
+        Pageable pageable = PageRequest.of(pagina, tamano, Sort.by("inicio"));
+        return reservaRepository.buscar(salaId, desde, hasta, pageable);
     }
 
     @Transactional
