@@ -14,3 +14,10 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+
+  # Usuario para la autenticación Basic (se puede cambiar con variables de entorno
+  # SPRING_SECURITY_USER_NAME y SPRING_SECURITY_USER_PASSWORD).
+  security:
+    user:
+      name: admin
+      password: admin123
